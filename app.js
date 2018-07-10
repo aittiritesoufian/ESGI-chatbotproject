@@ -29,3 +29,19 @@ var menuItems = {
 		item: "dialog4"
 	},
 }
+
+bot.dialog('menu', [
+	// Step1
+	function(){
+		builder.Prompt.choice(session,
+			'Voilà ce que je peux faire pour toi :)',
+			menuItems,
+			{ listStyle: 3})
+	}
+
+	//Step 2
+	function(session, result) {
+		var choice = result.response.entity;
+		session.beginDialog(menuItem[choice].item);
+	}
+	])
