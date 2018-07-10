@@ -12,8 +12,21 @@ var connector = new builder.ChatConnector({
 server.post('/api/messages', connector.listen());
 
 var inMemoryStorage = new builder.MemoryBotStorage();
-var bot = new builder.UniversalBot(connector).set('storage', inMemoryStorage);
+var bot = new builder.UniversalBot(connector, [
+	function(session){
+		
+	}
+]).set('storage', inMemoryStorage);
 
+bot.on('conversationUpdate', function(message){
+	if(message.memberAdded) {
+		message.memberAdded.forEach(function(identity){
+			if(identity.id === message.address.bot.id){
+				session.beginDialog(Message.address, '/')
+			}
+		})
+	}
+});
 //Menu items
 var menuItems = {
 	"Action1" :{
@@ -44,4 +57,4 @@ bot.dialog('menu', [
 		var choice = result.response.entity;
 		session.beginDialog(menuItem[choice].item);
 	}
-	])
+]);
