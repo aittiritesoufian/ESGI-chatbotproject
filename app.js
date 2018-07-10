@@ -49,13 +49,12 @@ var menuItems = {
 
 bot.dialog('menu', [
 	// Step1
-	function(){
-		builder.Prompt.choice(session,
+	function(session){
+		builder.Prompts.choice(session,
 			'Voilà ce que je peux faire pour toi :)',
 			menuItems,
 			{ listStyle: 3})
-	}
-
+	},
 	//Step 2
 	function(session, result) {
 		var choice = result.response.entity;
