@@ -1,5 +1,8 @@
 var builder = require('botbuilder');
 var restify = require('restify');
+const SpaceXAPI = require('SpaceX-API-Wrapper');
+
+let SpaceX = new SpaceXAPI();
 
 //server
 var server = restify.createServer();
@@ -61,3 +64,11 @@ bot.dialog('menu', [
 		session.beginDialog(menuItem[choice].item);
 	}
 ]);
+
+bot.dialog('aboutDialog', [
+	function(session) {
+		SpaceX.getCompanyInfo(function(err, data){
+		    session.send(JSON.stringify(data));
+		});
+	}
+])
