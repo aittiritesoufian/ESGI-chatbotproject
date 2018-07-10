@@ -1,6 +1,7 @@
 var builder = require('botbuilder');
 var restify = require('restify');
-const SpaceXAPI = require('SpaceX-API-Wrapper');
+var SpaceXAPI = require('SpaceX-API-Wrapper');
+var https = require('https');
 
 let SpaceX = new SpaceXAPI();
 
@@ -26,8 +27,8 @@ var bot = new builder.UniversalBot(connector, [
 ]).set('storage', inMemoryStorage);
 
 bot.on('conversationUpdate', function(message){
-	if(message.memberAdded) {
-		message.memberAdded.forEach(function(identity){
+	if(message.membersAdded) {
+		message.membersAdded.forEach(function(identity){
 			if(identity.id === message.address.bot.id){
 				session.beginDialog(Message.address, '/')
 			}
@@ -36,17 +37,11 @@ bot.on('conversationUpdate', function(message){
 });
 //Menu items
 var menuItems = {
-	"Action1" :{
-		item: "dialog1"
+	"Next Launch" :{
+		item: "next"
 	},
-	"Action2" :{
-		item: "aboutDialog"
-	},
-	"Action3" :{
-		item: "dialog3"
-	},
-	"Action4" :{
-		item: "dialog4"
+	"Last Launch" :{
+		item: "last"
 	},
 }
 
@@ -62,7 +57,10 @@ bot.dialog('menu', [
 	function(session, result) {
 		var choice = result.response.entity;
 		session.beginDialog(menuItems[choice].item);
-	}
+	},
+    function(session,results) {
+        session.send(results);
+    }
 ]);
 
 function typing(){
@@ -77,7 +75,118 @@ bot.dialog('aboutDialog', [
 	}
 ]);
 
-function buildAboutCard(data, session) {
+bot.dialog('next', [
+    function(session){
+        https.get('https://api.spacexdata.com/v2/launches/next', (resp) => {
+          let data = '';
+
+          resp.on('data', (chunk) => {
+            data += chunk;
+          });
+
+          resp.on('end', () => {
+            data = JSON.parse(data);
+	        var adaptativeCard = {
+                "type": "message",
+                "text": "Numéro de lancement : "+data.flight_number+" Mission: "+data.mission_name,
+                "attachments": [
+                    {
+                      "contentType": "application/vnd.microsoft.card.adaptive",
+                      "content": {
+                        "type": "AdaptiveCard",
+                        "version": "1.0",
+                        "body": [
+                          {
+                            "type": "TextBlock",
+                            "text": (data.details ? data.details : "< pas d'information >"),
+                            "size": "large"
+                          },
+                          {
+                            "type": "TextBlock",
+                            "text": "Date de lancement : "+(data.launch_date_local ? data.launch_date_local : "< pas d'information >")
+                          },
+                          {
+                            "type": "TextBlock",
+                            "text": "Site de lancement : "+(data.launch_site.site_name_long ? data.launch_site.site_name_long : "< pas d'information >"),
+                            "separation": "none"
+                          }
+                        ],
+                        "actions": [
+                          {
+                            "type": "Action.OpenUrl",
+                            "url": (data.links.article_link ? data.links.article_link : "< pas d'information >"),
+                            "title": "Learn More"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                
+            }
+            session.endDialogWithResult(adaptativeCard);
+          });
+
+        });
+    }
+]);
+bot.dialog('last', [
+    function(session){
+        https.get('https://api.spacexdata.com/v2/launches/latest', (resp) => {
+          var data = '';
+
+          resp.on('data', (chunk) => {
+            data += chunk;
+          });
+
+          resp.on('end', () => {
+            data = JSON.parse(data);
+            var adaptativeCard = {
+                "type": "message",
+                "text": "Numéro de lancement : "+data.flight_number,
+                "attachments": [
+                    {
+                      "contentType": "application/vnd.microsoft.card.adaptive",
+                      "content": {
+                        "type": "AdaptiveCard",
+                        "version": "1.0",
+                        "body": [
+                          {
+                            "type": "TextBlock",
+                            "text": data.details,
+                            "size": "large"
+                          },
+                          {
+                            "type": "TextBlock",
+                            "text": "Date de lancement : "+data.launch_date_local,
+                          },
+                          {
+                            "type": "TextBlock",
+                            "text": "Site de lancement : "+data.launch_site.site_name_long,
+                            "separation": "none"
+                          }
+                        ],
+                        "actions": [
+                          {
+                            "type": "Action.OpenUrl",
+                            "url": data.links.article_link,
+                            "title": "Learn More"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                
+            }
+            session.endDialogWithResult(adaptativeCard);
+          });
+
+        }).on("error", (err) => {
+          session.endDialogWithResult("Error: " + err.message);
+        });
+    }
+]);
+
+/*function buildAboutCard(data, session) {
 	var adaptiveCard = new builder.Message(session).addAttachment({
 		contentType : 'application/vnd.microsoft.card.adaptive',
 		content:{
@@ -97,4 +206,4 @@ function buildAboutCard(data, session) {
 			]
 		}
 	});
-}
+}*/
