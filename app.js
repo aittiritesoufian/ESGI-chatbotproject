@@ -40,7 +40,7 @@ var menuItems = {
 		item: "dialog1"
 	},
 	"Action2" :{
-		item: "dialog2"
+		item: "aboutDialog"
 	},
 	"Action3" :{
 		item: "dialog3"
@@ -61,9 +61,13 @@ bot.dialog('menu', [
 	//Step 2
 	function(session, result) {
 		var choice = result.response.entity;
-		session.beginDialog(menuItem[choice].item);
+		session.beginDialog(menuItems[choice].item);
 	}
 ]);
+
+function typing(){
+	session.sendTyping();
+}
 
 bot.dialog('aboutDialog', [
 	function(session) {
@@ -71,4 +75,4 @@ bot.dialog('aboutDialog', [
 		    session.send(JSON.stringify(data));
 		});
 	}
-])
+]);
