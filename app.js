@@ -1,6 +1,9 @@
+var builder = require('botbuilder');
+var restify = require('restify');
+
 //server
 var server = restify.createServer();
-server.listen(process.env.PORT, function(){
+server.listen(process.env.PORT || 3978, function(){
     console.log("%s listening to %s", server.name, server.url);
 })
 
@@ -14,7 +17,8 @@ server.post('/api/messages', connector.listen());
 var inMemoryStorage = new builder.MemoryBotStorage();
 var bot = new builder.UniversalBot(connector, [
 	function(session){
-		
+		session.send('Hello je suis le bot SpaceX');
+		session.beginDialog('menu');
 	}
 ]).set('storage', inMemoryStorage);
 
