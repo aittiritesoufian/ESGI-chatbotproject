@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "adaptivecards": "^1.0.0",
     "botbuilder": "^3.15.0",
     "restify": "^7.2.1",
     "spacex-api-wrapper": "^1.0.1"

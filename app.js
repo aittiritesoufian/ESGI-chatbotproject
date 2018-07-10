@@ -76,3 +76,25 @@ bot.dialog('aboutDialog', [
 		});
 	}
 ]);
+
+function buildAboutCard(data, session) {
+	var adaptiveCard = new builder.Message(session).addAttachment({
+		contentType : 'application/vnd.microsoft.card.adaptive',
+		content:{
+			type: 'adaptiveCard',
+			body: [
+				{
+					type : 'Container',
+					Items:[
+						{
+							type: '',
+							text: '',
+							weight: '',
+							size: ''
+						}
+					]
+				}
+			]
+		}
+	});
+}
