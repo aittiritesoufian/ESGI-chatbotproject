@@ -46,6 +46,9 @@ var menuItems = {
 	"Last Launch with image" :{
 		item: "last2"
 	},
+	"Last Launch Carousel" :{
+		item: "lastCarousel"
+	},
 }
 
 bot.dialog('menu', [
@@ -188,6 +191,7 @@ bot.dialog('last', [
         });
     }
 ]);
+
 bot.dialog('last2', [
     function(session){
         https.get('https://api.spacexdata.com/v2/launches/latest', (resp) => {
@@ -202,6 +206,7 @@ bot.dialog('last2', [
             var adaptativeCard = {
                 "type": "message",
                 "text": "Numéro de lancement : "+data.flight_number,
+                "attachmentLayout": "carousel",
                 "attachments": [
                     {
                       "contentType": "application/vnd.microsoft.card.adaptive",
@@ -296,6 +301,130 @@ bot.dialog('last2', [
                       }
                     }
                   ]
+                
+            }
+            session.endDialogWithResult(adaptativeCard);
+          });
+
+        }).on("error", (err) => {
+          session.endDialogWithResult("Error: " + err.message);
+        });
+    }
+]);
+
+bot.dialog('lastCarousel', [
+    function(session){
+        https.get('https://api.spacexdata.com/v2/launches/upcoming', (resp) => {
+          var data = '';
+
+          resp.on('data', (chunk) => {
+            data += chunk;
+          });
+
+          resp.on('end', () => {
+            data = JSON.parse(data);
+            var attachments = [];
+            data.forEach(function(item){
+            	// session.send(JSON.stringify(item));
+			  attachments.push({
+			  	"contentType": "application/vnd.microsoft.card.adaptive",
+                      "content": {
+                        "type": "AdaptiveCard",
+                        "version": "1.0",
+                        "body": [
+							{
+								"type": "Container",
+								"items": [
+									{
+										"type": "TextBlock",
+										"text": "",
+										"weight": "bolder",
+										"size": "medium"
+									},
+									{
+										"type": "ColumnSet",
+										"columns": [
+											{
+												"type": "Column",
+												"width": "auto",
+												"items": [
+													{
+														"type": "Image",
+														"url": item.links.mission_patch_small,
+														"size": "large",
+													}
+												]
+											},
+											{
+												"type": "Column",
+												"width": "stretch",
+												"items": [
+													{
+														"type": "TextBlock",
+														"text": "Numéro de lancement : "+(item.flight_number ? item.flight_number : "< pas d'information >"),
+														"weight": "bolder",
+														"wrap": true
+													},
+													{
+														"type": "TextBlock",
+														"text": "Mission: "+(item.mission_name ? item.mission_name : "< pas d'information >"),
+														"wrap": true
+													},
+													{
+														"type": "TextBlock",
+														"text": "Année de lancement: "+(item.launch_year ? item.launch_year : "< pas d'information >"),
+														"wrap": true
+													}
+												]
+											}
+										]
+									}
+								]
+							},
+							{
+								"type": "Container",
+								"items": [
+									{
+										"type": "TextBlock",
+										"text": (item.details ? item.details : "< pas d'information >"),
+										"wrap": true
+									},
+									{
+										"type": "FactSet",
+										"facts": [
+											{
+												"title": "Date de lancement : ",
+												"value": (item.launch_date_local ? item.launch_date_local : "< pas d'information >")
+											},
+											{
+												"title": "Site de lancement : ",
+												"value": (item.launch_site.site_name_long ? item.launch_site.site_name_long : "< pas d'information >")
+											},
+											{
+												"title": "Rocket :",
+												"value": (item.rocket.rocket_name ? item.rocket.rocket_name : "< pas d'information >")
+											}
+										]
+									}
+								]
+							}
+						],
+						"actions": [
+							{
+                            "type": "Action.OpenUrl",
+                            "url": (item.links.article_link ? item.links.article_link : "< pas d'information >"),
+                            "title": "Learn More"
+                          }
+						]
+                      }
+			  });
+			});
+
+            var adaptativeCard = {
+                "type": "message",
+                "text": "Numéro de lancement : "+data.flight_number,
+                "attachmentLayout": "carousel",
+                "attachments": attachments
                 
             }
             session.endDialogWithResult(adaptativeCard);
