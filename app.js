@@ -30,7 +30,7 @@ bot.on('conversationUpdate', function(message){
 	if(message.membersAdded) {
 		message.membersAdded.forEach(function(identity){
 			if(identity.id === message.address.bot.id){
-				session.beginDialog(Message.address, '/')
+				bot.beginDialog(message.address, '/');
 			}
 		})
 	}
@@ -40,11 +40,8 @@ var menuItems = {
 	"Next Launch" :{
 		item: "next"
 	},
-	"Last Launch" :{
-		item: "last"
-	},
 	"Last Launch with image" :{
-		item: "last2"
+		item: "last"
 	},
 	"Last Launch Carousel" :{
 		item: "lastCarousel"
@@ -104,23 +101,23 @@ bot.dialog('next', [
                         "body": [
                           {
                             "type": "TextBlock",
-                            "text": (data.details ? data.details : "< pas d'information >"),
+                            "text": (data.details ? data.details : "(pas d'informations)"),
                             "size": "large"
                           },
                           {
                             "type": "TextBlock",
-                            "text": "Date de lancement : "+(data.launch_date_local ? data.launch_date_local : "< pas d'information >")
+                            "text": "Date de lancement : "+(data.launch_date_local ? data.launch_date_local : "(pas d'informations)")
                           },
                           {
                             "type": "TextBlock",
-                            "text": "Site de lancement : "+(data.launch_site.site_name_long ? data.launch_site.site_name_long : "< pas d'information >"),
+                            "text": "Site de lancement : "+(data.launch_site.site_name_long ? data.launch_site.site_name_long : "(pas d'informations)"),
                             "separation": "none"
                           }
                         ],
                         "actions": [
                           {
                             "type": "Action.OpenUrl",
-                            "url": (data.links.article_link ? data.links.article_link : "< pas d'information >"),
+                            "url": (data.links.article_link ? data.links.article_link : "(pas d'informations)"),
                             "title": "Learn More"
                           }
                         ]
@@ -135,6 +132,7 @@ bot.dialog('next', [
         });
     }
 ]);
+
 bot.dialog('last', [
     function(session){
         https.get('https://api.spacexdata.com/v2/launches/latest', (resp) => {
@@ -148,64 +146,7 @@ bot.dialog('last', [
             data = JSON.parse(data);
             var adaptativeCard = {
                 "type": "message",
-                "text": "Numéro de lancement : "+data.flight_number,
-                "attachments": [
-                    {
-                      "contentType": "application/vnd.microsoft.card.adaptive",
-                      "content": {
-                        "type": "AdaptiveCard",
-                        "version": "1.0",
-                        "body": [
-                          {
-                            "type": "TextBlock",
-                            "text": data.details,
-                            "size": "large"
-                          },
-                          {
-                            "type": "TextBlock",
-                            "text": "Date de lancement : "+data.launch_date_local,
-                          },
-                          {
-                            "type": "TextBlock",
-                            "text": "Site de lancement : "+data.launch_site.site_name_long,
-                            "separation": "none"
-                          }
-                        ],
-                        "actions": [
-                          {
-                            "type": "Action.OpenUrl",
-                            "url": data.links.article_link,
-                            "title": "Learn More"
-                          }
-                        ]
-                      }
-                    }
-                  ]
-                
-            }
-            session.endDialogWithResult(adaptativeCard);
-          });
-
-        }).on("error", (err) => {
-          session.endDialogWithResult("Error: " + err.message);
-        });
-    }
-]);
-
-bot.dialog('last2', [
-    function(session){
-        https.get('https://api.spacexdata.com/v2/launches/latest', (resp) => {
-          var data = '';
-
-          resp.on('data', (chunk) => {
-            data += chunk;
-          });
-
-          resp.on('end', () => {
-            data = JSON.parse(data);
-            var adaptativeCard = {
-                "type": "message",
-                "text": "Numéro de lancement : "+data.flight_number,
+                "text": "",
                 "attachmentLayout": "carousel",
                 "attachments": [
                     {
@@ -272,6 +213,12 @@ bot.dialog('last2', [
 										"wrap": true
 									},
 									{
+										"type": "TextBlock",
+										"text": "Launch "+(data.launch_success ? "Succes" : "Fail"),
+										"color": data.launch_success ? "good" : "attention",
+										"wrap": true
+									},
+									{
 										"type": "FactSet",
 										"facts": [
 											{
@@ -281,10 +228,6 @@ bot.dialog('last2', [
 											{
 												"title": "Site de lancement : ",
 												"value": data.launch_site.site_name_long
-											},
-											{
-												"title": "Rocket :",
-												"value": data.rocket.rocket_name
 											}
 										]
 									}
@@ -292,10 +235,115 @@ bot.dialog('last2', [
 							}
 						],
 						"actions": [
-							{
+						  {
+						    "type": "Action.ShowCard",
+						    "title": "Rocket Information",
+						    "card": {
+						    	"type": "AdaptiveCard",
+						    	"body": [
+						    		{
+										"type": "Container",
+										"items": [
+											{
+												"type": "FactSet",
+												"facts": [
+													{
+														"title": "Rocket name :",
+														"value": data.rocket.rocket_type+"/"+data.rocket.rocket_name
+													},
+													{
+														"title": "Core Serial :",
+														"value": data.rocket.first_stage.cores[0].core_serial
+													},
+													{
+														"title": "Nombre de vols :",
+														"value": data.rocket.first_stage.cores[0].flight
+													},
+													{
+														"title": "Blocks :",
+														"value": data.rocket.first_stage.cores[0].block
+													}
+												]
+											}
+										]
+									}
+						    	]
+						    }
+						  },
+						  {
+						    "type": "Action.ShowCard",
+						    "title": "Payloads",
+						    "card": {
+						    	"type": "AdaptiveCard",
+						    	"body": [
+						    		{
+										"type": "Container",
+										"items": [
+											{
+												"type": "FactSet",
+												"facts": [
+													{
+														"title": "Payloads ID :",
+														"value": data.rocket.second_stage.payloads[0].payload_id
+													},
+													{
+														"title": "CAP Serial :",
+														"value": data.rocket.second_stage.payloads[0].cap_serial
+													},
+													{
+														"title": "Customer :",
+														"value": data.rocket.second_stage.payloads[0].customers[0]
+													}
+												]
+											}
+										]
+									}
+						    	]
+						    }
+						  },
+						  {
+						    "type": "Action.ShowCard",
+						    "title": "Reuse",
+						    "card": {
+						    	"type": "AdaptiveCard",
+						    	"body": [
+						    		{
+										"type": "Container",
+										"items": [
+											{
+												"type": "FactSet",
+												"facts": [
+													{
+														"title": "Core :",
+														"value": data.reuse.core ? "Yes" : "No"
+													},
+													{
+														"title": "Side Core 1 :",
+														"value": data.reuse.side_core1 ? "Yes" : "No"
+													},
+													{
+														"title": "Side Core 2 :",
+														"value": data.reuse.side_core2 ? "Yes" : "No"
+													},
+													{
+														"title": "Fairings :",
+														"value": data.reuse.fairings ? "Yes" : "No"
+													},
+													{
+														"title": "Capsule :",
+														"value": data.reuse.capsule ? "Yes" : "No"
+													},
+												]
+											}
+										]
+									}
+						    	]
+						    }
+						  },
+                          {
                             "type": "Action.OpenUrl",
-                            "url": data.links.article_link,
-                            "title": "Learn More"
+                            "url": data.links.video_link,
+                            "title": "Launch cast"
                           }
 						]
                       }
@@ -350,7 +398,7 @@ bot.dialog('lastCarousel', [
 												"items": [
 													{
 														"type": "Image",
-														"url": item.links.mission_patch_small,
+														"url": (item.links.mission_patch_small ? item.links.mission_patch_small : ""),
 														"size": "large",
 													}
 												]
@@ -361,18 +409,18 @@ bot.dialog('lastCarousel', [
 												"items": [
 													{
 														"type": "TextBlock",
-														"text": "Numéro de lancement : "+(item.flight_number ? item.flight_number : "< pas d'information >"),
+														"text": "Numéro de lancement : "+(item.flight_number ? item.flight_number : "(pas d'informations)"),
 														"weight": "bolder",
 														"wrap": true
 													},
 													{
 														"type": "TextBlock",
-														"text": "Mission: "+(item.mission_name ? item.mission_name : "< pas d'information >"),
+														"text": "Mission: "+(item.mission_name ? item.mission_name : "(pas d'informations)"),
 														"wrap": true
 													},
 													{
 														"type": "TextBlock",
-														"text": "Année de lancement: "+(item.launch_year ? item.launch_year : "< pas d'information >"),
+														"text": "Année de lancement: "+(item.launch_year ? item.launch_year : "(pas d'informations)"),
 														"wrap": true
 													}
 												]
@@ -386,7 +434,7 @@ bot.dialog('lastCarousel', [
 								"items": [
 									{
 										"type": "TextBlock",
-										"text": (item.details ? item.details : "< pas d'information >"),
+										"text": (item.details ? item.details : "(pas d'informations)"),
 										"wrap": true
 									},
 									{
@@ -394,15 +442,11 @@ bot.dialog('lastCarousel', [
 										"facts": [
 											{
 												"title": "Date de lancement : ",
-												"value": (item.launch_date_local ? item.launch_date_local : "< pas d'information >")
+												"value": (item.launch_date_local ? item.launch_date_local : "(pas d'informations)")
 											},
 											{
 												"title": "Site de lancement : ",
-												"value": (item.launch_site.site_name_long ? item.launch_site.site_name_long : "< pas d'information >")
-											},
-											{
-												"title": "Rocket :",
-												"value": (item.rocket.rocket_name ? item.rocket.rocket_name : "< pas d'information >")
+												"value": (item.launch_site.site_name_long ? item.launch_site.site_name_long : "(pas d'informations)")
 											}
 										]
 									}
@@ -412,7 +456,7 @@ bot.dialog('lastCarousel', [
 						"actions": [
 							{
                             "type": "Action.OpenUrl",
-                            "url": (item.links.article_link ? item.links.article_link : "< pas d'information >"),
+                            "url": (item.links.article_link ? item.links.article_link : "(pas d'informations)"),
                             "title": "Learn More"
                           }
 						]
