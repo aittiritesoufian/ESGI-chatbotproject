@@ -43,6 +43,9 @@ var menuItems = {
 	"Last Launch" :{
 		item: "last"
 	},
+	"Last Launch with image" :{
+		item: "last2"
+	},
 }
 
 bot.dialog('menu', [
@@ -172,6 +175,124 @@ bot.dialog('last', [
                             "title": "Learn More"
                           }
                         ]
+                      }
+                    }
+                  ]
+                
+            }
+            session.endDialogWithResult(adaptativeCard);
+          });
+
+        }).on("error", (err) => {
+          session.endDialogWithResult("Error: " + err.message);
+        });
+    }
+]);
+bot.dialog('last2', [
+    function(session){
+        https.get('https://api.spacexdata.com/v2/launches/latest', (resp) => {
+          var data = '';
+
+          resp.on('data', (chunk) => {
+            data += chunk;
+          });
+
+          resp.on('end', () => {
+            data = JSON.parse(data);
+            var adaptativeCard = {
+                "type": "message",
+                "text": "Numéro de lancement : "+data.flight_number,
+                "attachments": [
+                    {
+                      "contentType": "application/vnd.microsoft.card.adaptive",
+                      "content": {
+                        "type": "AdaptiveCard",
+                        "version": "1.0",
+                        "body": [
+							{
+								"type": "Container",
+								"items": [
+									{
+										"type": "TextBlock",
+										"text": "",
+										"weight": "bolder",
+										"size": "medium"
+									},
+									{
+										"type": "ColumnSet",
+										"columns": [
+											{
+												"type": "Column",
+												"width": "auto",
+												"items": [
+													{
+														"type": "Image",
+														"url": data.links.mission_patch_small,
+														"size": "large",
+													}
+												]
+											},
+											{
+												"type": "Column",
+												"width": "stretch",
+												"items": [
+													{
+														"type": "TextBlock",
+														"text": "Numéro de lancement : "+data.flight_number,
+														"weight": "bolder",
+														"wrap": true
+													},
+													{
+														"type": "TextBlock",
+														"text": "Mission: "+data.mission_name,
+														"wrap": true
+													},
+													{
+														"type": "TextBlock",
+														"text": "Année de lancement: "+data.launch_year,
+														"wrap": true
+													}
+												]
+											}
+										]
+									}
+								]
+							},
+							{
+								"type": "Container",
+								"items": [
+									{
+										"type": "TextBlock",
+										"text": data.details,
+										"wrap": true
+									},
+									{
+										"type": "FactSet",
+										"facts": [
+											{
+												"title": "Date de lancement : ",
+												"value": data.launch_date_local
+											},
+											{
+												"title": "Site de lancement : ",
+												"value": data.launch_site.site_name_long
+											},
+											{
+												"title": "Rocket :",
+												"value": data.rocket.rocket_name
+											}
+										]
+									}
+								]
+							}
+						],
+						"actions": [
+							{
+                            "type": "Action.OpenUrl",
+                            "url": data.links.article_link,
+                            "title": "Learn More"
+                          }
+						]
                       }
                     }
                   ]
