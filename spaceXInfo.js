@@ -343,11 +343,13 @@ module.exports = function(){
                       }
                   ],
                   "actions": [
+                    item.links.article_link ?
                       {
                       "type": "Action.OpenUrl",
                       "url": (item.links.article_link ? item.links.article_link : "(pas d'informations)"),
                       "title": "Learn More"
                     }
+                    : ''
                   ]
                 }
             };
